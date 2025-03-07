@@ -1,3 +1,39 @@
+/* Color palette */
+.highlighter-color-palette {
+    position: absolute;
+    display: none;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    border-radius: 20px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    gap: 10px;
+    transition: opacity 0.2s ease;
+    min-height: 40px;
+    pointer-events: auto; /* Ensure clicks register */
+    user-select: none; /* Prevent text selection within the palette */
+}
+
+/* Color circles */
+.highlighter-color-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    pointer-events: auto; /* Ensure clicks register */
+}
+
+.highlighter-color-circle:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
 /* Base styles for all highlights */
 .highlighter-mark {
     cursor: pointer;

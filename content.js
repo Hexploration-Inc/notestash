@@ -1,3 +1,236 @@
+// Define highlight colors (keep in sync with background.js)
+const highlightColors = {
+  yellow: { color: '#ffff00', name: 'Yellow' },
+  green: { color: '#c2f0c2', name: 'Light Green' },
+  blue: { color: '#cce5ff', name: 'Light Blue' },
+  pink: { color: '#ffcccc', name: 'Light Pink' },
+  purple: { color: '#e6ccff', name: 'Light Purple' }
+};
+
+// Create and manage color palette for text selection
+function createColorPalette() {
+  // Check if palette already exists
+  let palette = document.getElementById('highlighter-color-palette');
+  if (palette) return palette;
+  
+  // Create palette element
+  palette = document.createElement('div');
+  palette.id = 'highlighter-color-palette';
+  palette.className = 'highlighter-color-palette';
+  
+  // Add color circles
+  Object.entries(highlightColors).forEach(([colorKey, details]) => {
+    const colorCircle = document.createElement('div');
+    colorCircle.className = 'highlighter-color-circle';
+    colorCircle.style.backgroundColor = details.color;
+    colorCircle.dataset.colorKey = colorKey;
+    colorCircle.title = details.name;
+    
+    // Add click handler
+    colorCircle.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Apply highlight with selected color
+      // Use a slight delay to ensure the selection is preserved when clicking
+      setTimeout(() => {
+        applyHighlight(colorKey, details.color);
+        
+        // Hide palette after selection
+        hideColorPalette();
+      }, 10);
+    });
+    
+    palette.appendChild(colorCircle);
+  });
+  
+  // Add palette to document
+  document.body.appendChild(palette);
+  return palette;
+}
+
+// Function to apply highlight using the selected color
+function applyHighlight(colorKey, colorValue) {
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+  
+  if (selectedText) {
+    try {
+      // Clone the range to avoid issues with selection changes
+      const range = selection.getRangeAt(0).cloneRange();
+      const span = document.createElement('span');
+      span.className = 'highlighter-mark';
+      span.style.backgroundColor = colorValue;
+      span.dataset.color = colorKey;
+      
+      const highlightId = `highlight-${Date.now()}`;
+      span.dataset.highlightId = highlightId;
+      
+      // Get the ancestor node that contains the selection
+      let container = range.commonAncestorContainer;
+      if (container.nodeType !== Node.ELEMENT_NODE) {
+        container = container.parentNode;
+      }
+      
+      // Find the index of this occurrence
+      let occurrenceIndex = 0;
+      let currentNode = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      
+      // Get the path to the node
+      const getNodePath = function(node) {
+        const path = [];
+        while (node !== document.body && node.parentNode) {
+          let index = 0;
+          let sibling = node;
+          while (sibling) {
+            sibling = sibling.previousSibling;
+            if (sibling) index++;
+          }
+          path.unshift(index);
+          node = node.parentNode;
+        }
+        return path;
+      };
+      
+      // Get the exact path to the node containing the highlight
+      const nodePath = getNodePath(range.startContainer);
+      
+      // Count occurrences of this text up to this point
+      let textNode;
+      let currentOccurrence = 0;
+      while (textNode = currentNode.nextNode()) {
+        const textContent = textNode.textContent;
+        let pos = -1;
+        while ((pos = textContent.indexOf(selectedText, pos + 1)) !== -1) {
+          currentOccurrence++;
+          // If this is our selection, save the occurrence index
+          if (textNode === range.startContainer && pos === range.startOffset) {
+            occurrenceIndex = currentOccurrence;
+            break;
+          }
+        }
+        if (occurrenceIndex > 0) break;
+      }
+      
+      // Apply the highlight
+      range.surroundContents(span);
+      
+      // Save the highlight to storage
+      const highlight = {
+        id: highlightId,
+        text: selectedText,
+        url: window.location.href,
+        timestamp: Date.now(),
+        occurrenceIndex: occurrenceIndex,
+        nodePath: nodePath,
+        colorKey: colorKey,
+        colorValue: colorValue
+      };
+      
+      saveHighlight(highlight);
+      console.log('Successfully applied highlight:', highlight);
+      
+    } catch (e) {
+      console.error('Failed to highlight text:', e);
+      // Try again with a simpler approach if the complex one fails
+      try {
+        const range = selection.getRangeAt(0).cloneRange();
+        const span = document.createElement('span');
+        span.className = 'highlighter-mark';
+        span.style.backgroundColor = colorValue;
+        span.dataset.color = colorKey;
+        
+        const highlightId = `highlight-${Date.now()}`;
+        span.dataset.highlightId = highlightId;
+        
+        range.surroundContents(span);
+        
+        // Save a simpler highlight version
+        saveHighlight({
+          id: highlightId,
+          text: selectedText,
+          url: window.location.href,
+          timestamp: Date.now(),
+          colorKey: colorKey,
+          colorValue: colorValue
+        });
+        
+        console.log('Applied simplified highlight as fallback');
+      } catch (e2) {
+        console.error('Both highlight methods failed:', e2);
+      }
+    }
+  } else {
+    console.warn('No text selected for highlighting');
+  }
+}
+
+// Position the color palette above or below selected text
+function positionColorPalette() {
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return false;
+  
+  const range = selection.getRangeAt(0);
+  if (range.collapsed) return false;
+  
+  // Get selection coordinates and dimensions
+  const rect = range.getBoundingClientRect();
+  if (!rect.width || !rect.height) return false;
+  
+  // Get or create palette
+  const palette = createColorPalette();
+  
+  // Position palette above or below text based on available space
+  const paletteHeight = 40; // Approximate height of palette
+  
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  
+  // Default position (above text)
+  let top, left;
+  
+  if (spaceAbove > paletteHeight || spaceAbove > spaceBelow) {
+    // Position above text
+    top = rect.top + window.scrollY - paletteHeight - 5;
+  } else {
+    // Position below text
+    top = rect.bottom + window.scrollY + 5;
+  }
+  
+  // Center horizontally over the selection
+  left = rect.left + window.scrollX + (rect.width / 2) - (palette.offsetWidth / 2 || 100); // Default width estimate if not yet rendered
+  
+  // Ensure palette stays within viewport horizontally
+  if (left < 5) left = 5;
+  if (left + (palette.offsetWidth || 200) > window.innerWidth - 5) {
+    left = window.innerWidth - (palette.offsetWidth || 200) - 5;
+  }
+  
+  // Apply position
+  palette.style.top = `${top}px`;
+  palette.style.left = `${left}px`;
+  palette.style.display = 'flex';
+  palette.style.opacity = '1';
+  
+  // Store the current selection text to check if it changes
+  palette.dataset.selectionText = selection.toString().trim();
+  
+  return true;
+}
+
+// Hide color palette
+function hideColorPalette() {
+  const palette = document.getElementById('highlighter-color-palette');
+  if (palette) {
+    palette.style.display = 'none';
+  }
+}
+
 // Function to restore highlights
 function restoreHighlights() {
     chrome.storage.local.get(['highlights'], function(result) {
@@ -448,5 +681,73 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         scrollToHighlight(message.highlightId, message.highlightText, message.occurrenceIndex);
         sendResponse({ success: true });
         return true;
+    }
+});
+
+// Track if we're in the middle of a mouse selection
+let isSelecting = false;
+
+// Mouse down event to track start of selection
+document.addEventListener('mousedown', function(e) {
+    // Don't interfere with clicks on the palette itself
+    if (e.target.closest('.highlighter-color-palette') ||
+        e.target.classList.contains('highlighter-color-circle')) {
+        return;
+    }
+    
+    isSelecting = true;
+    hideColorPalette();
+});
+
+// Mouse up event to detect end of selection
+document.addEventListener('mouseup', function(e) {
+    // Don't interfere with clicks on the palette itself
+    if (e.target.closest('.highlighter-color-palette') ||
+        e.target.classList.contains('highlighter-color-circle')) {
+        return;
+    }
+    
+    // Wait briefly to ensure selection is complete before checking
+    setTimeout(() => {
+        isSelecting = false;
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+        
+        if (selectedText) {
+            positionColorPalette();
+        }
+    }, 10);
+});
+
+// Event listeners for showing/hiding color palette on text selection
+document.addEventListener('selectionchange', function() {
+    // Only process this event if we're not in the middle of a mouse selection
+    if (!isSelecting) {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+        
+        // Get current palette
+        const palette = document.getElementById('highlighter-color-palette');
+        
+        if (selectedText) {
+            // Only reposition if the selection text has changed
+            if (!palette || palette.dataset.selectionText !== selectedText) {
+                positionColorPalette();
+            }
+        } else {
+            hideColorPalette();
+        }
+    }
+});
+
+// Hide palette when clicking elsewhere (but not during selection)
+document.addEventListener('click', function(e) {
+    // Skip this during text selection
+    if (isSelecting) return;
+    
+    // Check if click is outside of the palette and not on a color circle
+    if (!e.target.closest('.highlighter-color-palette') && 
+        !e.target.classList.contains('highlighter-color-circle')) {
+        hideColorPalette();
     }
 });
