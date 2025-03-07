@@ -21,15 +21,34 @@
     .controls {
       margin-bottom: 10px;
     }
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .button-row button {
+      flex: 1;
+      padding: 5px;
+    }
+    #importInput {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="controls">
-    <button id="clearHighlights">Clear All Highlights</button>
+    <div class="button-row">
+      <button id="exportHighlights">Export Highlights</button>
+      <button id="importHighlights">Import Highlights</button>
+    </div>
+    <div class="button-row">
+      <button id="clearHighlights">Clear All Highlights</button>
+    </div>
   </div>
   <div class="highlight-list" id="highlightList">
     <!-- Highlights will be listed here -->
   </div>
+  <input type="file" id="importInput" accept=".json">
   <script src="popup.js"></script>
 </body>
 </html>
