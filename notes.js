@@ -269,6 +269,10 @@ function addNoteToSelection() {
     return;
   }
   
+  // Calculate which occurrence of this text was selected
+  const occurrenceIndex = findOccurrenceIndex(selectedText, selection);
+  console.log('Selected occurrence index:', occurrenceIndex);
+  
   // Show note popup
   const notePopup = document.getElementById('note-popup');
   const noteTextarea = document.getElementById('note-content');
@@ -298,6 +302,7 @@ function addNoteToSelection() {
   // Store the selection coordinates for later use when creating the note indicator
   notePopup.dataset.selectionLeft = (rect.right + window.scrollX);
   notePopup.dataset.selectionTop = (rect.top + window.scrollY);
+  notePopup.dataset.occurrenceIndex = occurrenceIndex;
   
   // Position centered note popup with fixed dimensions
   notePopup.style.position = 'fixed';
@@ -531,6 +536,9 @@ function setupNoteEventListeners() {
       // notePopup = document.getElementById('note-popup');
       let position = null;
       
+      // Get occurrence index from the popup's dataset
+      const occurrenceIndex = parseInt(notePopup.dataset.occurrenceIndex || '1');
+      
       // Get position from stored data (if available)
       if (notePopup.dataset.selectionLeft && notePopup.dataset.selectionTop) {
         position = {
@@ -560,7 +568,8 @@ function setupNoteEventListeners() {
         text: selectedText,
         content: noteContent,
         url: window.location.href,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        occurrenceIndex: parseInt(notePopup.dataset.occurrenceIndex || '1') // Store which occurrence this note is for
       };
       
       // Ensure storage is initialized before saving
@@ -818,8 +827,11 @@ function restoreNotes() {
           // Find the text occurrence on the page
           const text = note.text;
           
-          // For simplicity, just place the indicator at the first occurrence
-          const occurrence = findTextInDocument(text, 1);
+          // Use the stored occurrence index, default to 1 for backward compatibility
+          const occurrenceIndex = note.occurrenceIndex || 1;
+          
+          // Place the indicator at the correct occurrence
+          const occurrence = findTextInDocument(text, occurrenceIndex);
           if (occurrence) {
             createNoteIndicator(note.id, {
               left: occurrence.right,
@@ -830,6 +842,46 @@ function restoreNotes() {
       });
     }
   });
+}
+
+// Helper function to find which occurrence of text was selected
+function findOccurrenceIndex(searchText, selection) {
+  if (!searchText || !selection) return 1;
+  
+  // Get the selected range
+  const range = selection.getRangeAt(0);
+  const startNode = range.startContainer;
+  const startOffset = range.startOffset;
+  
+  // Create a tree walker to traverse text nodes
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+  
+  let currentOccurrence = 0;
+  let node;
+  
+  // Iterate through text nodes
+  while (node = walker.nextNode()) {
+    const nodeText = node.textContent;
+    let pos = -1;
+    
+    // Find all occurrences in this text node
+    while ((pos = nodeText.indexOf(searchText, pos + 1)) !== -1) {
+      currentOccurrence++;
+      
+      // If this is the same node and position as our selection
+      if (node === startNode && pos === startOffset) {
+        return currentOccurrence;
+      }
+    }
+  }
+  
+  // If we couldn't determine the occurrence, default to 1
+  return 1;
 }
 
 // Helper function to find text on the page
