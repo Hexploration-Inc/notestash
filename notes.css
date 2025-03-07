@@ -179,6 +179,35 @@
   color: #666666;
 }
 
+.note-viewer-edit {
+  position: absolute;
+  bottom: 10px;
+  right: 60px;
+  padding: 4px 8px;
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-viewer-edit:hover {
+  background-color: #2b6dd8;
+  transform: translateY(-1px);
+}
+
+.note-viewer-edit::before {
+  content: '✏️';
+  font-size: 10px;
+  margin-right: 4px;
+  display: inline-block;
+}
+
 .note-viewer-delete {
   position: absolute;
   bottom: 10px;
@@ -190,8 +219,10 @@
   border-radius: 3px;
   cursor: pointer;
   font-size: 12px;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .note-viewer-delete:hover {
   background-color: #d32f2f;
+  transform: translateY(-1px);
 }

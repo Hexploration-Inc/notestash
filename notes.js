@@ -212,6 +212,12 @@ function createNoteUI() {
   noteTextarea.style.margin = '8px 0 16px 0';
   noteTextarea.style.resize = 'vertical';
   
+  // Create hidden input for edit mode
+  const noteIdInput = document.createElement('input');
+  noteIdInput.type = 'hidden';
+  noteIdInput.id = 'edit-note-id';
+  noteIdInput.value = '';
+  
   // Create buttons for the popup
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'note-buttons';
@@ -244,6 +250,7 @@ function createNoteUI() {
   buttonContainer.appendChild(saveButton);
   buttonContainer.appendChild(cancelButton);
   notePopup.appendChild(noteTextarea);
+  notePopup.appendChild(noteIdInput); // Add hidden input for edit mode
   notePopup.appendChild(buttonContainer);
   
   // Add to document
@@ -272,6 +279,15 @@ function addNoteToSelection() {
     createNoteUI(); // Try to recreate UI
     return;
   }
+  
+  // Clear edit mode - we're creating a new note, not editing
+  const editNoteIdField = document.getElementById('edit-note-id');
+  if (editNoteIdField) {
+    editNoteIdField.value = '';
+  }
+  
+  // Clear any previous content in the textarea
+  noteTextarea.value = '';
   
   // Position the note popup near the selection
   const range = selection.getRangeAt(0);
@@ -360,6 +376,33 @@ function showNoteContent(noteId) {
       viewer.style.display = 'none';
     });
     viewer.appendChild(closeBtn);
+    
+    // Create edit button with improved UI
+    const editBtn = document.createElement('button');
+    editBtn.className = 'note-viewer-edit';
+    editBtn.textContent = 'Edit';
+    editBtn.title = 'Edit this note';
+    
+    // Better handling with visual feedback
+    editBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Visual feedback on click
+      editBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        editBtn.style.transform = '';
+      }, 100);
+      
+      const noteId = viewer.dataset.noteId;
+      if (noteId) {
+        console.log('Editing note:', noteId);
+        // Edit the note
+        editNote(noteId);
+        viewer.style.display = 'none';
+      }
+    });
+    viewer.appendChild(editBtn);
     
     // Create delete button
     const deleteBtn = document.createElement('button');
@@ -477,8 +520,11 @@ function setupNoteEventListeners() {
       console.log('Saving note for text:', selectedText);
       console.log('Note content:', noteContent);
       
-      // Create a unique ID for the note with timestamp and random component to ensure uniqueness
-      const noteId = `note-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      // Check if we're in edit mode
+      const editNoteId = document.getElementById('edit-note-id').value;
+      
+      // Use existing ID if editing, otherwise create a new one
+      const noteId = editNoteId || `note-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       
       // Store the position information from the original text selection
       // This ensures we have the correct position even if selection changes
@@ -664,6 +710,98 @@ function setupNoteEventListeners() {
       sendResponse({ notes: notesCache });
     }
   });
+}
+
+// Function to edit an existing note
+function editNote(noteId) {
+  const note = notesCache[noteId];
+  if (!note) {
+    console.error('Note not found for editing:', noteId);
+    return;
+  }
+  
+  // Get note popup
+  const notePopup = document.getElementById('note-popup');
+  if (!notePopup) {
+    console.error('Note popup not found, recreating');
+    createNoteUI();
+    setTimeout(() => editNote(noteId), 100);
+    return;
+  }
+  
+  // Store the note text in the popup's dataset
+  notePopup.dataset.selectedText = note.text;
+  
+  // Find the indicator position
+  const indicator = document.querySelector(`.note-indicator[data-note-id="${noteId}"]`);
+  if (indicator) {
+    const rect = indicator.getBoundingClientRect();
+    notePopup.dataset.selectionLeft = rect.left + window.scrollX;
+    notePopup.dataset.selectionTop = rect.top + window.scrollY;
+    
+    // Position popup near the indicator
+    notePopup.style.position = 'absolute';
+    notePopup.style.top = (rect.bottom + window.scrollY + 10) + 'px';
+    notePopup.style.left = (rect.left + window.scrollX - 150) + 'px'; // Position it centered
+  }
+  
+  // Set edit mode
+  document.getElementById('edit-note-id').value = noteId;
+  
+  // Fill in existing content
+  document.getElementById('note-content').value = note.content;
+  
+  // Show the popup
+  notePopup.style.display = 'block';
+  
+  // Focus the textarea
+  document.getElementById('note-content').focus();
+}
+
+// Function to edit an existing note
+function editNote(noteId) {
+  const note = notesCache[noteId];
+  if (!note) {
+    console.error('Note not found for editing:', noteId);
+    return;
+  }
+  
+  // Get note popup
+  const notePopup = document.getElementById('note-popup');
+  if (!notePopup) {
+    console.error('Note popup not found, recreating');
+    createNoteUI();
+    setTimeout(() => editNote(noteId), 100);
+    return;
+  }
+  
+  // Store the note text in the popup's dataset
+  notePopup.dataset.selectedText = note.text;
+  
+  // Find the indicator position
+  const indicator = document.querySelector(`.note-indicator[data-note-id="${noteId}"]`);
+  if (indicator) {
+    const rect = indicator.getBoundingClientRect();
+    notePopup.dataset.selectionLeft = rect.left + window.scrollX;
+    notePopup.dataset.selectionTop = rect.top + window.scrollY;
+    
+    // Position popup near the indicator
+    notePopup.style.position = 'absolute';
+    notePopup.style.top = (rect.bottom + window.scrollY + 10) + 'px';
+    notePopup.style.left = (rect.left + window.scrollX - 150) + 'px'; // Position it centered
+  }
+  
+  // Set edit mode
+  document.getElementById('edit-note-id').value = noteId;
+  
+  // Fill in existing content
+  document.getElementById('note-content').value = note.content;
+  
+  // Show the popup
+  notePopup.style.display = 'block';
+  
+  // Focus the textarea
+  document.getElementById('note-content').focus();
 }
 
 // Restore notes when page loads
