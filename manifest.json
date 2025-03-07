@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Text Highlighter & Notes",
+  "name": "NoteStash",
   "version": "1.0",
   "description": "Highlight, take notes, and save text selections across webpages",
   "permissions": [
