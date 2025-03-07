@@ -4,11 +4,67 @@
 // Store for notes
 let notesCache = {};
 
+// Flag to track if storage is initialized
+let storageInitialized = false;
+
+// Force direct writing to storage for debugging
+function forceStorageSave() {
+  console.log('Force saving notes to storage');
+  const testNote = {
+    id: 'test-' + Date.now(),
+    text: 'Test note',
+    content: 'This is a test note to verify storage is working',
+    url: window.location.href,
+    timestamp: Date.now()
+  };
+  
+  // Try direct storage API call
+  chrome.storage.local.set({ 'test_note': testNote }, function() {
+    if (chrome.runtime.lastError) {
+      console.error('Storage API test failed:', chrome.runtime.lastError);
+    } else {
+      console.log('Storage API test passed');
+      // Now read it back
+      chrome.storage.local.get(['test_note'], function(result) {
+        if (result.test_note) {
+          console.log('Successfully read back test note:', result.test_note);
+        } else {
+          console.error('Failed to read back test note');
+        }
+      });
+    }
+  });
+}
+
 // Initialize note system
 function initializeNotes() {
-  loadNotesFromStorage();
-  createNoteUI();
-  setupNoteEventListeners();
+  console.log('Initializing notes system at:', new Date().toISOString());
+  // If already initialized, don't do it again
+  if (storageInitialized) {
+    console.log('Notes system already initialized, skipping initialization');
+    return;
+  }
+  
+  // Ensure we have storage permissions
+  chrome.storage.local.get(null, function() {
+    if (chrome.runtime.lastError) {
+      console.error('Storage permission error:', chrome.runtime.lastError);
+    } else {
+      storageInitialized = true;
+      console.log('Storage access confirmed');
+      
+      // Test storage explicitly
+      forceStorageSave();
+    }
+    
+    // Set up the notes system in the correct order
+    loadNotesFromStorage();
+    createNoteUI();
+    setupNoteEventListeners();
+    
+    // Log that initialization is complete
+    console.log('Notes system initialization complete');
+  });
 }
 
 // Flag to track if note listeners are already set up
@@ -16,22 +72,82 @@ let noteListenersInitialized = false;
 
 // Load all saved notes
 function loadNotesFromStorage() {
+  console.log('Loading notes from storage...');
   chrome.storage.local.get(['notes'], function(result) {
-    if (result.notes) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading notes:', chrome.runtime.lastError);
+      return;
+    }
+    
+    if (result.notes && Object.keys(result.notes).length > 0) {
       notesCache = result.notes;
       console.log('Notes loaded from storage:', Object.keys(notesCache).length);
+      console.log('Sample note IDs:', Object.keys(notesCache).slice(0, 3));
+      
+      // Verify notes structure
+      let validNotes = 0;
+      for (const [id, note] of Object.entries(notesCache)) {
+        if (note && note.id && note.text && note.content) {
+          validNotes++;
+        }
+      }
+      console.log('Valid notes structure count:', validNotes);
+    } else {
+      // Initialize empty notes object if none exists
+      notesCache = {};
+      console.log('No notes found in storage, initialized empty cache');
     }
   });
 }
 
 // Save note to storage
 function saveNote(note) {
+  if (!note || !note.id) {
+    console.error('Invalid note object:', note);
+    return;
+  }
+
   // Add to local cache
   notesCache[note.id] = note;
   
-  // Save to Chrome storage
-  chrome.storage.local.set({ 'notes': notesCache }, function() {
-    console.log('Note saved:', note.id);
+  // More detailed debugging
+  console.log('Attempting to save note:', JSON.stringify(note));
+  console.log('Current cache state before save:', Object.keys(notesCache).length, 'notes');
+  
+  // Get existing notes to ensure we're not overwriting anything
+  chrome.storage.local.get(['notes'], function(result) {
+    let existingNotes = result.notes || {};
+    console.log('Retrieved from storage:', Object.keys(existingNotes).length, 'existing notes');
+    
+    // Add our new note
+    existingNotes[note.id] = note;
+    
+    // Update our cache with any other notes we might not have had
+    notesCache = existingNotes;
+    
+    // DEBUG: Verify what's about to be saved
+    console.log('About to save notes object with', Object.keys(existingNotes).length, 'notes');
+    console.log('Sample note IDs:', Object.keys(existingNotes).slice(0, 3));
+    
+    // Save back to storage with explicit error handling
+    chrome.storage.local.set({ 'notes': existingNotes }, function() {
+      // Check if there was an error
+      if (chrome.runtime.lastError) {
+        console.error('Error saving note:', chrome.runtime.lastError);
+      } else {
+        console.log('Note saved successfully:', note.id);
+        console.log('Total notes in storage:', Object.keys(existingNotes).length);
+        
+        // Verify storage was updated by reading it back
+        chrome.storage.local.get(['notes'], function(verifyResult) {
+          if (verifyResult.notes && verifyResult.notes[note.id]) {
+            console.log('Storage verification: Note found in storage ✓');
+          } else {
+            console.error('Storage verification FAILED: Note not found in storage after save!');
+          }
+        });
+      }
+    });
   });
 }
 
@@ -88,6 +204,13 @@ function createNoteUI() {
   noteTextarea.id = 'note-content';
   noteTextarea.className = 'note-content';
   noteTextarea.placeholder = 'Enter your note...';
+  noteTextarea.style.width = '100%';
+  noteTextarea.style.height = '100px';
+  noteTextarea.style.padding = '8px';
+  noteTextarea.style.border = '1px solid #ddd';
+  noteTextarea.style.borderRadius = '4px';
+  noteTextarea.style.margin = '8px 0 16px 0';
+  noteTextarea.style.resize = 'vertical';
   
   // Create buttons for the popup
   const buttonContainer = document.createElement('div');
@@ -97,11 +220,25 @@ function createNoteUI() {
   saveButton.id = 'note-save';
   saveButton.className = 'note-save-button';
   saveButton.textContent = 'Save';
+  saveButton.style.cursor = 'pointer';
+  saveButton.style.padding = '8px 16px';
+  saveButton.style.margin = '0 5px';
+  saveButton.style.backgroundColor = '#4CAF50';
+  saveButton.style.color = 'white';
+  saveButton.style.border = 'none';
+  saveButton.style.borderRadius = '4px';
   
   const cancelButton = document.createElement('button');
   cancelButton.id = 'note-cancel';
   cancelButton.className = 'note-cancel-button';
   cancelButton.textContent = 'Cancel';
+  cancelButton.style.cursor = 'pointer';
+  cancelButton.style.padding = '8px 16px';
+  cancelButton.style.margin = '0 5px';
+  cancelButton.style.backgroundColor = '#f44336';
+  cancelButton.style.color = 'white';
+  cancelButton.style.border = 'none';
+  cancelButton.style.borderRadius = '4px';
   
   // Assemble the UI
   buttonContainer.appendChild(saveButton);
@@ -147,6 +284,15 @@ function addNoteToSelection() {
   notePopup.style.top = (window.innerHeight / 2 - 150) + 'px';
   notePopup.style.left = (window.innerWidth / 2 - 150) + 'px';
   notePopup.style.width = '300px';
+  notePopup.style.backgroundColor = '#f9f9f9';
+  notePopup.style.border = '1px solid #ccc';
+  notePopup.style.borderRadius = '8px';
+  notePopup.style.padding = '16px';
+  notePopup.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+  notePopup.style.zIndex = '10001'; // Higher than other elementsborder = '1px solid #ccc';
+  notePopup.style.borderRadius = '8px';
+  notePopup.style.padding = '16px';
+  notePopup.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
   notePopup.style.zIndex = '10001'; // Higher than other elements
   
   // Store the selected text and range
@@ -290,41 +436,59 @@ function setupNoteEventListeners() {
       }
     }
   });
-  
-  // Create save and cancel buttons for the popup
+    // Create save and cancel buttons for the popup
   const saveButton = document.getElementById('note-save');
   if (saveButton) {
-    // Remove existing listener if present
+    console.log('Found save button, attaching event listener');
+    
+    // Clear existing event listeners by cloning
     const newSaveButton = saveButton.cloneNode(true);
     saveButton.parentNode.replaceChild(newSaveButton, saveButton);
     
-    // Add new listener
-    newSaveButton.addEventListener('click', function() {
-      console.log('Save button clicked');
+    // Add a more reliable direct click handler
+    newSaveButton.onclick = function(event) {
+      console.log('Save button clicked via onclick property');
+      event.preventDefault();
+      event.stopPropagation();
+
+      console.log('Save button clicked at:', new Date().toISOString());
       const notePopup = document.getElementById('note-popup');
       const selectedText = notePopup.dataset.selectedText;
       const noteContent = document.getElementById('note-content').value.trim();
       
+      // Validate inputs
+      if (!selectedText) {
+        console.error('No selected text found in dataset');
+        return;
+      }
+      
+      if (!noteContent) {
+        console.warn('Note content is empty, not saving empty note');
+        return;
+      }
+      
       console.log('Saving note for text:', selectedText);
       console.log('Note content:', noteContent);
       
-      if (selectedText && noteContent) {
-        // Create a unique ID for the note
-        const noteId = `note-${Date.now()}`;
-        
-        // Get the position for the note indicator
-        const selection = window.getSelection();
-        let position = null;
-        
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const rect = range.getBoundingClientRect();
-          position = {
-            left: rect.right,
-            top: rect.top
-          };
-        }
+      // Create a unique ID for the note with timestamp and random component to ensure uniqueness
+      const noteId = `note-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       
+      // Get the position for the note indicator
+      const selection = window.getSelection();
+      let position = null;
+      
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        position = {
+          left: rect.right,
+          top: rect.top
+        };
+        console.log('Note indicator position:', position);
+      } else {
+        console.warn('No selection range found for position');
+      }
+    
       // Create the note object
       const note = {
         id: noteId,
@@ -334,32 +498,68 @@ function setupNoteEventListeners() {
         timestamp: Date.now()
       };
       
-      // Save the note
-      saveNote(note);
-      
-      // Create visual indicator
-      if (position) {
-        const indicator = createNoteIndicator(noteId, position);
+      // Ensure storage is initialized before saving
+      if (!storageInitialized) {
+        console.warn('Storage not initialized yet, initializing now...');
+        chrome.storage.local.get(null, function() {
+          if (chrome.runtime.lastError) {
+            console.error('Failed to initialize storage:', chrome.runtime.lastError);
+            return;
+          }
+          
+          storageInitialized = true;
+          console.log('Storage initialized before save');
+          
+          // Now save the note
+          saveNote(note);
+          
+          // Create visual indicator
+          if (position) {
+            const indicator = createNoteIndicator(noteId, position);
+            console.log('Note indicator created:', indicator ? 'success' : 'failed');
+          }
+          
+          // Hide the popup
+          notePopup.style.display = 'none';
+        });
+      } else {
+        // Storage is already initialized, proceed with save
+        console.log('Storage already initialized, saving note directly');
+        saveNote(note);
+        
+        // Create visual indicator
+        if (position) {
+          const indicator = createNoteIndicator(noteId, position);
+          console.log('Note indicator created:', indicator ? 'success' : 'failed');
+        } else {
+          console.warn('No position for indicator, skipping visual indicator');
+        }
+        
+        // Hide the popup
+        notePopup.style.display = 'none';
       }
-      
-      // Hide the popup
-      notePopup.style.display = 'none';
-    }
-  });
+    };
+  }
   
   // Cancel button for the popup
   const cancelButton = document.getElementById('note-cancel');
   if (cancelButton) {
+    console.log('Found cancel button, attaching event listener');
+    
     // Remove existing listener if present
     const newCancelButton = cancelButton.cloneNode(true);
     cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
     
-    // Add new listener
-    newCancelButton.addEventListener('click', function() {
+    // Add direct click handler with debug
+    newCancelButton.onclick = function(event) {
+      console.log('Cancel button clicked via onclick property');
+      event.preventDefault();
+      event.stopPropagation();
+      
       console.log('Cancel button clicked');
       const notePopup = document.getElementById('note-popup');
       notePopup.style.display = 'none';
-    });
+    };
   }
   
   // Handle text selection to show the note button
@@ -524,4 +724,4 @@ if (document.readyState === 'loading') {
 window.addEventListener('load', function() {
   initializeNotes();
   setTimeout(restoreNotes, 1000);
-})};
+});
