@@ -279,6 +279,10 @@ function addNoteToSelection() {
   
   if (!rect.width || !rect.height) return;
   
+  // Store the selection coordinates for later use when creating the note indicator
+  notePopup.dataset.selectionLeft = (rect.right + window.scrollX);
+  notePopup.dataset.selectionTop = (rect.top + window.scrollY);
+  
   // Position centered note popup with fixed dimensions
   notePopup.style.position = 'fixed';
   notePopup.style.top = (window.innerHeight / 2 - 150) + 'px';
@@ -317,6 +321,9 @@ function createNoteIndicator(noteId, position) {
   indicator.dataset.noteId = noteId;
   indicator.title = 'Click to view note';
   indicator.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z"></path></svg>';
+  
+  // Always set position to absolute for proper positioning
+  indicator.style.position = 'absolute';
   
   // Set position if provided
   if (position) {
@@ -473,20 +480,32 @@ function setupNoteEventListeners() {
       // Create a unique ID for the note with timestamp and random component to ensure uniqueness
       const noteId = `note-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
       
-      // Get the position for the note indicator
-      const selection = window.getSelection();
+      // Store the position information from the original text selection
+      // This ensures we have the correct position even if selection changes
+      // notePopup = document.getElementById('note-popup');
       let position = null;
       
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
+      // Get position from stored data (if available)
+      if (notePopup.dataset.selectionLeft && notePopup.dataset.selectionTop) {
         position = {
-          left: rect.right,
-          top: rect.top
+          left: parseInt(notePopup.dataset.selectionLeft),
+          top: parseInt(notePopup.dataset.selectionTop)
         };
-        console.log('Note indicator position:', position);
+        console.log('Using stored note indicator position:', position);
       } else {
-        console.warn('No selection range found for position');
+        // Fallback to current selection if data isn't available
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          position = {
+            left: rect.right,
+            top: rect.top
+          };
+          console.log('Note indicator position from current selection:', position);
+        } else {
+          console.warn('No position information available for note indicator');
+        }
       }
     
       // Create the note object
@@ -519,8 +538,12 @@ function setupNoteEventListeners() {
             console.log('Note indicator created:', indicator ? 'success' : 'failed');
           }
           
-          // Hide the popup
+          // Hide both the popup and the note button
           notePopup.style.display = 'none';
+          const noteButton = document.getElementById('note-button');
+          if (noteButton) {
+            noteButton.style.display = 'none';
+          }
         });
       } else {
         // Storage is already initialized, proceed with save
@@ -535,8 +558,12 @@ function setupNoteEventListeners() {
           console.warn('No position for indicator, skipping visual indicator');
         }
         
-        // Hide the popup
+        // Hide both the popup and the note button
         notePopup.style.display = 'none';
+        const noteButton = document.getElementById('note-button');
+        if (noteButton) {
+          noteButton.style.display = 'none';
+        }
       }
     };
   }
