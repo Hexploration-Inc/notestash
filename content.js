@@ -246,3 +246,169 @@ observer.observe(document.body, {
     childList: true,
     subtree: true
 });
+
+// Function to find and scroll to a specific highlight
+function scrollToHighlight(highlightId, highlightText, occurrenceIndex) {
+    console.log(`Attempting to scroll to highlight: ${highlightId}, text: ${highlightText}, occurrence: ${occurrenceIndex}`);
+    
+    // First check if the highlight element already exists
+    const existingHighlight = document.querySelector(`.highlighter-mark[data-highlight-id="${highlightId}"]`);
+    if (existingHighlight) {
+        console.log('Found existing highlight element, scrolling to it');
+        existingHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightElement(existingHighlight);
+        return true;
+    }
+    
+    // If the highlight doesn't exist yet, we need to restore highlights first
+    console.log('Highlight not found in DOM, attempting to restore it');
+    restoreHighlights();
+    
+    // After restoring, try to find the highlight again
+    setTimeout(() => {
+        const highlight = document.querySelector(`.highlighter-mark[data-highlight-id="${highlightId}"]`);
+        if (highlight) {
+            console.log('Found highlight after restoration, scrolling to it');
+            highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            highlightElement(highlight);
+        } else {
+            console.log('Highlight still not found, attempting to locate by text and occurrence');
+            scrollToTextOccurrence(highlightText, occurrenceIndex);
+        }
+    }, 500);
+}
+
+// Function to find and scroll to a specific occurrence of text
+function scrollToTextOccurrence(text, occurrenceIndex) {
+    // Find all text nodes in the document
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: function(node) {
+                if (node.parentNode.classList && node.parentNode.classList.contains('highlighter-mark')) {
+                    return NodeFilter.FILTER_ACCEPT; // Accept already highlighted nodes too
+                }
+                if (node.textContent.trim().length === 0) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        },
+        false
+    );
+    
+    let currentOccurrence = 0;
+    let node;
+    let foundElement = null;
+    
+    // First check already highlighted elements
+    const highlightElements = document.querySelectorAll('.highlighter-mark');
+    for (const el of highlightElements) {
+        if (el.textContent === text) {
+            currentOccurrence++;
+            if (currentOccurrence === occurrenceIndex) {
+                foundElement = el;
+                break;
+            }
+        }
+    }
+    
+    // If found among existing highlights
+    if (foundElement) {
+        foundElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightElement(foundElement);
+        return true;
+    }
+    
+    // Reset counter and check all text nodes
+    currentOccurrence = 0;
+    while (node = walker.nextNode()) {
+        const textContent = node.textContent;
+        let pos = -1;
+        
+        while ((pos = textContent.indexOf(text, pos + 1)) !== -1) {
+            currentOccurrence++;
+            
+            if (currentOccurrence === occurrenceIndex) {
+                // We found the correct occurrence
+                if (node.parentNode.classList && node.parentNode.classList.contains('highlighter-mark')) {
+                    // This is already a highlight element
+                    node.parentNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    highlightElement(node.parentNode);
+                } else {
+                    // This is a text node, we need to create temporary highlight
+                    try {
+                        const range = document.createRange();
+                        range.setStart(node, pos);
+                        range.setEnd(node, pos + text.length);
+                        
+                        // Create temporary visual cue
+                        const tempHighlight = document.createElement('span');
+                        tempHighlight.className = 'highlighter-mark temp-highlight';
+                        tempHighlight.style.backgroundColor = 'yellow';
+                        tempHighlight.style.transition = 'background-color 2s';
+                        
+                        range.surroundContents(tempHighlight);
+                        tempHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        highlightElement(tempHighlight);
+                        
+                        // Remove temp highlight after a while, leaving original text
+                        setTimeout(() => {
+                            if (tempHighlight.parentNode) {
+                                const parent = tempHighlight.parentNode;
+                                const text = tempHighlight.textContent;
+                                const textNode = document.createTextNode(text);
+                                parent.replaceChild(textNode, tempHighlight);
+                            }
+                        }, 5000);
+                    } catch (e) {
+                        console.error('Error creating temporary highlight:', e);
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    
+    console.log(`Could not find occurrence ${occurrenceIndex} of text: ${text}`);
+    return false;
+}
+
+// Function to add visual emphasis to a highlighted element
+function highlightElement(element) {
+    // Add a pulsing effect
+    const originalColor = element.style.backgroundColor;
+    
+    // Define the animation
+    element.style.animation = 'pulse-highlight 2s ease-in-out 3';
+    
+    // Create the keyframes for the animation if they don't exist yet
+    if (!document.querySelector('#highlight-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'highlight-keyframes';
+        style.textContent = `
+            @keyframes pulse-highlight {
+                0% { background-color: yellow; }
+                50% { background-color: orange; }
+                100% { background-color: yellow; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Remove the animation after it completes
+    setTimeout(() => {
+        element.style.animation = '';
+        element.style.backgroundColor = originalColor;
+    }, 6000);
+}
+
+// Listen for messages from the popup
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (message.action === 'scrollToHighlight') {
+        scrollToHighlight(message.highlightId, message.highlightText, message.occurrenceIndex);
+        sendResponse({ success: true });
+        return true;
+    }
+});
