@@ -231,8 +231,8 @@ function hideColorPalette() {
   }
 }
 
-// Function to restore highlights
-function restoreHighlights() {
+// Original restore highlights function that will be wrapped
+function _originalRestoreHighlights() {
     chrome.storage.local.get(['highlights'], function(result) {
         const urlHighlights = result.highlights?.[window.location.href] || [];
         if (urlHighlights.length === 0) return;
@@ -373,6 +373,9 @@ function restoreHighlights() {
     });
 }
 
+// Function to restore highlights (will be wrapped by setupHighlightInteractions)
+let restoreHighlights = _originalRestoreHighlights;
+
 // Fallback function for older highlights without position data
 function attemptFallbackHighlight(highlight) {
     const walker = document.createTreeWalker(
@@ -432,6 +435,44 @@ function saveHighlight(highlight) {
     });
 }
 
+// Function to remove highlight from storage
+function removeHighlight(highlightId) {
+    chrome.storage.local.get(['highlights'], function(result) {
+        const highlights = result.highlights || {};
+        const urlHighlights = highlights[window.location.href] || [];
+        
+        // Find and remove the highlight with matching ID
+        const updatedHighlights = urlHighlights.filter(h => h.id !== highlightId);
+        
+        // Update storage
+        if (updatedHighlights.length !== urlHighlights.length) {
+            highlights[window.location.href] = updatedHighlights;
+            chrome.storage.local.set({ highlights }, function() {
+                console.log('Highlight removed:', highlightId);
+            });
+        }
+    });
+}
+
+// Function to unhighlight a specific element
+function unhighlightElement(element) {
+    // Get the highlight ID for storage removal
+    const highlightId = element.dataset.highlightId;
+    
+    // Remove the span but keep the text
+    const parent = element.parentNode;
+    const text = element.textContent;
+    const textNode = document.createTextNode(text);
+    parent.replaceChild(textNode, element);
+    
+    // Remove from storage
+    if (highlightId) {
+        removeHighlight(highlightId);
+    }
+    
+    return true;
+}
+
 // Function to attempt highlight restoration
 function attemptRestore() {
     if (document.body) {
@@ -454,9 +495,76 @@ function ensureHighlightsRestored() {
 
 // Set up event listeners for initial page load
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', ensureHighlightsRestored);
+    document.addEventListener('DOMContentLoaded', function() {
+        ensureHighlightsRestored();
+        setupHighlightInteractions();
+    });
 } else {
     ensureHighlightsRestored();
+    setupHighlightInteractions();
+}
+
+// Setup click handlers for highlight interactions
+function setupHighlightInteractions() {
+    // Clean up any existing event handlers to prevent duplicates
+    const existingHandler = document.getElementById('highlighter-event-handler');
+    if (existingHandler) {
+        existingHandler.remove();
+    }
+    
+    // Create an invisible element to store our initialized state
+    const handlerMarker = document.createElement('div');
+    handlerMarker.id = 'highlighter-event-handler';
+    handlerMarker.style.display = 'none';
+    document.body.appendChild(handlerMarker);
+    
+    // Use direct event handling for all highlights
+    // This ensures we bind directly to the elements
+    function addClickHandlersToHighlights() {
+        document.querySelectorAll('.highlighter-mark').forEach(highlight => {
+            // Remove any existing click listeners first
+            highlight.removeEventListener('click', handleHighlightClick);
+            // Add the click listener
+            highlight.addEventListener('click', handleHighlightClick);
+            // Add visual feedback
+            highlight.title = 'Click to remove highlight';
+        });
+    }
+    
+    // Handle highlight click event
+    function handleHighlightClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Highlight clicked, removing...', this);
+        unhighlightElement(this);
+        return false;
+    }
+    
+    // Add hover effect using event delegation
+    document.body.addEventListener('mouseover', function(e) {
+        if (e.target.classList.contains('highlighter-mark')) {
+            e.target.title = 'Click to remove highlight';
+            e.target.classList.add('highlighter-mark-hover');
+        }
+    });
+    
+    document.body.addEventListener('mouseout', function(e) {
+        if (e.target.classList.contains('highlighter-mark')) {
+            e.target.classList.remove('highlighter-mark-hover');
+        }
+    });
+    
+    // Add click handlers to existing highlights
+    addClickHandlersToHighlights();
+    
+    // Also add handlers to new highlights after restoration
+    const originalRestoreHighlights = restoreHighlights;
+    restoreHighlights = function() {
+        originalRestoreHighlights.apply(this, arguments);
+        // Wait a brief moment for DOM to update
+        setTimeout(addClickHandlersToHighlights, 100);
+    };
 }
 
 // Also try when page is fully loaded with all resources

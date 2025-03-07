@@ -105,3 +105,25 @@
     0% { opacity: 0.7; }
     100% { opacity: 1; }
 }
+
+/* Hover styles for highlighting elements */
+.highlighter-mark-hover {
+    cursor: pointer;
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.3);
+    position: relative;
+}
+
+.highlighter-mark-hover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23FF0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right top;
+    background-size: 10px 10px;
+    opacity: 0.7;
+    pointer-events: none;
+}
