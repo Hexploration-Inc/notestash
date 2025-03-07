@@ -859,3 +859,26 @@ document.addEventListener('click', function(e) {
         hideColorPalette();
     }
 });
+
+// Function to initialize notes feature if available
+function initializeNotesFeature() {
+    if (typeof initializeNotes === 'function') {
+        console.log('Initializing notes feature');
+        initializeNotes();
+    } else {
+        console.log('Notes feature not found, waiting...');
+        // Try again after a short delay in case the script loads later
+        setTimeout(() => {
+            if (typeof initializeNotes === 'function') {
+                console.log('Initializing notes feature (delayed)');
+                initializeNotes();
+            }
+        }, 500);
+    }
+}
+
+// Initialize notes feature when page is loaded
+document.addEventListener('DOMContentLoaded', initializeNotesFeature);
+
+// Also try after full page load
+window.addEventListener('load', initializeNotesFeature);
