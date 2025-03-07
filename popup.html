@@ -7,19 +7,31 @@
       width: 300px;
       padding: 10px;
       font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
     }
     .highlight-list {
       max-height: 300px;
       overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      background-color: white;
+      padding: 8px;
     }
     .highlight-item {
-      margin: 5px 0;
-      padding: 5px;
-      background: #f5f5f5;
-      border-radius: 4px;
+      margin: 8px 0;
+      padding: 12px;
+      background: linear-gradient(to right, #f8f9fa, #ffffff);
+      border-left: 4px solid #4285f4;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .highlight-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.12);
     }
     .controls {
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
     .button-row {
       display: flex;
@@ -28,7 +40,16 @@
     }
     .button-row button {
       flex: 1;
-      padding: 5px;
+      padding: 8px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .button-row button:hover {
+      background-color: #3367d6;
     }
     #importInput {
       display: none;
