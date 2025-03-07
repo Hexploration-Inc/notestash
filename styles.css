@@ -1,0 +1,8 @@
+.highlighter-mark {
+    background-color: yellow !important;
+    cursor: pointer;
+}
+
+.highlighter-mark:hover {
+    background-color: #ffeb3b !important;
+}

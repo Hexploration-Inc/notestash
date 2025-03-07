@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Text Highlighter",
+  "version": "1.0",
+  "description": "Highlight and save text selections across webpages",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ]
+}

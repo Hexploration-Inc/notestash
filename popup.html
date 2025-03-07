@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Text Highlighter</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    .highlight-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .highlight-item {
+      margin: 5px 0;
+      padding: 5px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .controls {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button id="clearHighlights">Clear All Highlights</button>
+  </div>
+  <div class="highlight-list" id="highlightList">
+    <!-- Highlights will be listed here -->
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
