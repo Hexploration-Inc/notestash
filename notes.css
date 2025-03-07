@@ -1,0 +1,228 @@
+/* Styles for the note-taking feature - kept separate from highlighter styles */
+
+/* Note button that appears when text is selected */
+.note-button {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  min-width: 120px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  background-color: #34a853;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.note-button:hover {
+  background-color: #2d9549;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Note popup for entering note text */
+.note-popup {
+  position: fixed;
+  z-index: 10001;
+  width: 300px;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.note-content {
+  width: 100%;
+  height: 100px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+}
+
+.note-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.note-save-button,
+.note-cancel-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  border: none;
+}
+
+.note-save-button {
+  background-color: #34a853;
+  color: white;
+  font-weight: 500;
+}
+
+.note-save-button:hover {
+  background-color: #2d9549;
+  transform: translateY(-1px);
+}
+
+.note-cancel-button {
+  background-color: #f1f1f1;
+  color: #333333;
+}
+
+.note-cancel-button:hover {
+  background-color: #e4e4e4;
+}
+
+/* Note indicator that appears in the document */
+.note-indicator {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background-color: #34a853;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9998;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: pulseOnce 0.5s ease-in-out;
+}
+
+@keyframes pulseOnce {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.note-indicator:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Note content viewer */
+.note-viewer {
+  position: fixed;
+  z-index: 9999;
+  width: 300px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  display: none;
+}
+
+.note-viewer-content {
+  margin-bottom: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.note-viewer-text {
+  font-style: italic;
+  color: #666666;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eeeeee;
+  font-size: 14px;
+}
+
+.note-viewer-note {
+  color: #333333;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.note-viewer-close {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.note-viewer-close:hover {
+  color: #666666;
+}
+
+.note-viewer-edit {
+  position: absolute;
+  bottom: 10px;
+  right: 60px;
+  padding: 4px 8px;
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-viewer-edit:hover {
+  background-color: #2b6dd8;
+  transform: translateY(-1px);
+}
+
+.note-viewer-edit::before {
+  content: '✏️';
+  font-size: 10px;
+  margin-right: 4px;
+  display: inline-block;
+}
+
+.note-viewer-delete {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 4px 8px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.note-viewer-delete:hover {
+  background-color: #d32f2f;
+  transform: translateY(-1px);
+}

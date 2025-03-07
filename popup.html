@@ -1,15 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Text Highlighter</title>
+  <title>Text Highlighter & Notes</title>
   <style>
     body {
-      width: 300px;
+      width: 350px;
       padding: 10px;
       font-family: Arial, sans-serif;
       background-color: #f9f9f9;
     }
-    .highlight-list {
+    
+    /* Tab styling */
+    .tabs {
+      display: flex;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background-color: #f1f1f1;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .tab.active {
+      background-color: #4285f4;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* List styling */
+    .item-list {
       max-height: 300px;
       overflow-y: auto;
       border-radius: 8px;
@@ -17,27 +49,40 @@
       background-color: white;
       padding: 8px;
     }
-    .highlight-item {
+    
+    .highlight-item, .note-item {
       margin: 8px 0;
       padding: 12px;
       background: linear-gradient(to right, #f8f9fa, #ffffff);
-      border-left: 4px solid #4285f4;
       border-radius: 6px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
     }
-    .highlight-item:hover {
+    
+    .highlight-item {
+      border-left: 4px solid #4285f4;
+    }
+    
+    .note-item {
+      border-left: 4px solid #34a853;
+    }
+    
+    .highlight-item:hover, .note-item:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.12);
     }
+    
     .controls {
       margin-bottom: 15px;
     }
+    
     .button-row {
       display: flex;
       gap: 10px;
       margin-bottom: 10px;
     }
+    
     .button-row button {
       flex: 1;
       padding: 8px;
@@ -48,28 +93,71 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    .button-row button:hover {
-      background-color: #3367d6;
+    
+    .note-buttons button {
+      background-color: #34a853;
     }
-    #importInput {
+    
+    .button-row button:hover {
+      opacity: 0.9;
+    }
+    
+    .note-content {
+      margin-top: 5px;
+      padding: 5px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #555;
+    }
+    
+    #importInput, #importNotesInput {
       display: none;
     }
   </style>
 </head>
 <body>
-  <div class="controls">
-    <div class="button-row">
-      <button id="exportHighlights">Export Highlights</button>
-      <button id="importHighlights">Import Highlights</button>
-    </div>
-    <div class="button-row">
-      <button id="clearHighlights">Clear All Highlights</button>
-    </div>
+  <!-- Tab navigation -->
+  <div class="tabs">
+    <div class="tab active" data-tab="highlights">Highlights</div>
+    <div class="tab" data-tab="notes">Notes</div>
   </div>
-  <div class="highlight-list" id="highlightList">
-    <!-- Highlights will be listed here -->
+
+  <!-- Highlights Tab -->
+  <div id="highlightsTab" class="tab-content active">
+    <div class="controls">
+      <div class="button-row">
+        <button id="exportHighlights">Export Highlights</button>
+        <button id="importHighlights">Import Highlights</button>
+      </div>
+      <div class="button-row">
+        <button id="clearHighlights">Clear All Highlights</button>
+      </div>
+    </div>
+    <div class="item-list" id="highlightList">
+      <!-- Highlights will be listed here -->
+    </div>
+    <input type="file" id="importInput" accept=".json">
   </div>
-  <input type="file" id="importInput" accept=".json">
+
+  <!-- Notes Tab -->
+  <div id="notesTab" class="tab-content">
+    <div class="controls">
+      <div class="button-row note-buttons">
+        <button id="exportNotes">Export Notes</button>
+        <button id="importNotes">Import Notes</button>
+      </div>
+      <div class="button-row note-buttons">
+        <button id="clearNotes">Clear All Notes</button>
+      </div>
+    </div>
+    <div class="item-list" id="notesList">
+      <!-- Notes will be listed here -->
+    </div>
+    <input type="file" id="importNotesInput" accept=".json">
+  </div>
+
   <script src="popup.js"></script>
+  <script src="popup-notes.js"></script>
 </body>
 </html>

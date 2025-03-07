@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Text Highlighter",
+  "name": "Text Highlighter & Notes",
   "version": "1.0",
-  "description": "Highlight and save text selections across webpages",
+  "description": "Highlight, take notes, and save text selections across webpages",
   "permissions": [
     "storage",
     "activeTab",
@@ -10,6 +10,11 @@
     "contextMenus",
     "tabs"
   ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "background": {
     "service_worker": "background.js"
   },
@@ -19,8 +24,8 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["styles.css"]
+      "js": ["content.js", "notes.js"],
+      "css": ["styles.css", "notes.css"]
     }
   ]
 }
