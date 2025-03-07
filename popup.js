@@ -27,6 +27,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         const div = document.createElement('div');
                         div.className = 'highlight-item';
                         
+                        // Apply color styling to the highlight item
+                        if (highlight.colorValue) {
+                            div.style.borderLeft = `4px solid ${highlight.colorValue}`;
+                            div.style.backgroundColor = highlight.colorValue + '30'; // Add 30% opacity
+                        } else {
+                            div.style.borderLeft = '4px solid #ffff00';
+                            div.style.backgroundColor = '#ffff0030';
+                        }
+                        
                         // Truncate text if it's too long
                         const maxLength = 100;
                         let displayText = highlight.text;
@@ -35,7 +44,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         div.textContent = displayText;
-                        div.title = `Created: ${new Date(highlight.timestamp).toLocaleString()}`;
+                        
+                        // Show color name in the tooltip if available
+                        let tooltipText = `Created: ${new Date(highlight.timestamp).toLocaleString()}`;
+                        if (highlight.colorKey) {
+                            tooltipText += ` | Color: ${highlight.colorKey.charAt(0).toUpperCase() + highlight.colorKey.slice(1)}`;
+                        }
+                        div.title = tooltipText;
                         
                         // Make the highlight clickable
                         div.style.cursor = 'pointer';

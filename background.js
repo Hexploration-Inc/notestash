@@ -1,24 +1,51 @@
-// Create context menu item when extension is installed
+// Define highlight colors
+const highlightColors = {
+  yellow: { color: '#ffff00', name: 'Yellow' },
+  green: { color: '#c2f0c2', name: 'Light Green' },
+  blue: { color: '#cce5ff', name: 'Light Blue' },
+  pink: { color: '#ffcccc', name: 'Light Pink' },
+  purple: { color: '#e6ccff', name: 'Light Purple' }
+};
+
+// Create context menu items when extension is installed
 chrome.runtime.onInstalled.addListener(() => {
+  // Parent menu item
   chrome.contextMenus.create({
-    id: 'highlight-text',
+    id: 'highlight-text-parent',
     title: 'Highlight Text',
     contexts: ['selection']
+  });
+  
+  // Color submenu items
+  Object.entries(highlightColors).forEach(([id, details]) => {
+    chrome.contextMenus.create({
+      id: `highlight-${id}`,
+      parentId: 'highlight-text-parent',
+      title: details.name,
+      contexts: ['selection']
+    });
   });
 });
 
 // Listen for context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === 'highlight-text') {
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: highlightSelection
-    });
+  // Check if the menu item is one of our highlight colors
+  const colorMatch = info.menuItemId.match(/^highlight-(\w+)$/);
+  
+  if (colorMatch) {
+    const colorKey = colorMatch[1];
+    if (highlightColors[colorKey]) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: highlightSelection,
+        args: [colorKey, highlightColors[colorKey].color]
+      });
+    }
   }
 });
 
 // Function to highlight selected text
-function highlightSelection() {
+function highlightSelection(colorKey = 'yellow', colorValue = '#ffff00') {
   const selection = window.getSelection();
   const selectedText = selection.toString().trim();
   
@@ -26,7 +53,8 @@ function highlightSelection() {
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.className = 'highlighter-mark';
-    span.style.backgroundColor = 'yellow';
+    span.style.backgroundColor = colorValue;
+    span.dataset.color = colorKey;
     
     const highlightId = `highlight-${Date.now()}`;
     span.dataset.highlightId = highlightId;
@@ -101,10 +129,12 @@ function highlightSelection() {
           url: window.location.href,
           timestamp: Date.now(),
           occurrenceIndex: occurrenceIndex, // Store which occurrence of the text was highlighted
-          nodePath: nodePath // Store path to node for more precise location
+          nodePath: nodePath, // Store path to node for more precise location
+          colorKey: colorKey, // Store the color key
+          colorValue: colorValue // Store the actual color value
         });
         chrome.storage.local.set({ highlights }, function() {
-          console.log('Highlight saved successfully:', highlightId, 'occurrence:', occurrenceIndex);
+          console.log('Highlight saved successfully:', highlightId, 'occurrence:', occurrenceIndex, 'color:', colorKey);
         });
       });
     } catch (e) {

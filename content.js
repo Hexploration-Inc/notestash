@@ -87,8 +87,11 @@ function restoreHighlights() {
                                 const span = document.createElement('span');
                                 span.className = 'highlighter-mark';
                                 span.dataset.highlightId = highlight.id;
-                                // Explicitly apply the style
-                                span.style.backgroundColor = 'yellow';
+                                // Apply color from saved highlight or default to yellow
+                                if (highlight.colorKey) {
+                                    span.dataset.color = highlight.colorKey;
+                                }
+                                span.style.backgroundColor = highlight.colorValue || '#ffff00';
                                 
                                 range.surroundContents(span);
                                 found = true;
@@ -115,8 +118,11 @@ function restoreHighlights() {
                     const span = document.createElement('span');
                     span.className = 'highlighter-mark';
                     span.dataset.highlightId = highlight.id;
-                    // Explicitly apply the style
-                    span.style.backgroundColor = 'yellow';
+                    // Apply color from saved highlight or default to yellow
+                    if (highlight.colorKey) {
+                        span.dataset.color = highlight.colorKey;
+                    }
+                    span.style.backgroundColor = highlight.colorValue || '#ffff00';
                     
                     range.surroundContents(span);
                     console.log(`Restored highlight using exact node path:`, highlight.text);
@@ -164,7 +170,11 @@ function attemptFallbackHighlight(highlight) {
                 const span = document.createElement('span');
                 span.className = 'highlighter-mark';
                 span.dataset.highlightId = highlight.id;
-                span.style.backgroundColor = 'yellow';
+                // Apply color from saved highlight or default to yellow
+                if (highlight.colorKey) {
+                    span.dataset.color = highlight.colorKey;
+                }
+                span.style.backgroundColor = highlight.colorValue || '#ffff00';
                 
                 range.surroundContents(span);
                 console.log('Fallback highlight applied:', highlight.text);
@@ -346,7 +356,11 @@ function scrollToTextOccurrence(text, occurrenceIndex) {
                         // Create temporary visual cue
                         const tempHighlight = document.createElement('span');
                         tempHighlight.className = 'highlighter-mark temp-highlight';
-                        tempHighlight.style.backgroundColor = 'yellow';
+                        // Use the saved color if available, or default to yellow
+                        if (highlight.colorKey) {
+                            tempHighlight.dataset.color = highlight.colorKey;
+                        }
+                        tempHighlight.style.backgroundColor = highlight.colorValue || '#ffff00';
                         tempHighlight.style.transition = 'background-color 2s';
                         
                         range.surroundContents(tempHighlight);
@@ -379,19 +393,43 @@ function scrollToTextOccurrence(text, occurrenceIndex) {
 function highlightElement(element) {
     // Add a pulsing effect
     const originalColor = element.style.backgroundColor;
+    const colorKey = element.dataset.color || 'yellow';
     
     // Define the animation
-    element.style.animation = 'pulse-highlight 2s ease-in-out 3';
+    element.style.animation = `pulse-highlight-${colorKey} 2s ease-in-out 3`;
     
-    // Create the keyframes for the animation if they don't exist yet
-    if (!document.querySelector('#highlight-keyframes')) {
+    // Create the keyframes for this color's animation if they don't exist yet
+    if (!document.querySelector(`#highlight-keyframes-${colorKey}`)) {
         const style = document.createElement('style');
-        style.id = 'highlight-keyframes';
+        style.id = `highlight-keyframes-${colorKey}`;
+        
+        // Generate appropriate contrast color for the animation
+        let pulseColor;
+        switch(colorKey) {
+            case 'yellow':
+                pulseColor = 'orange';
+                break;
+            case 'green':
+                pulseColor = '#97d097'; // Darker green
+                break;
+            case 'blue':
+                pulseColor = '#99c2ff'; // Darker blue
+                break;
+            case 'pink':
+                pulseColor = '#ff9999'; // Darker pink
+                break;
+            case 'purple':
+                pulseColor = '#cc99ff'; // Darker purple
+                break;
+            default:
+                pulseColor = 'orange';
+        }
+        
         style.textContent = `
-            @keyframes pulse-highlight {
-                0% { background-color: yellow; }
-                50% { background-color: orange; }
-                100% { background-color: yellow; }
+            @keyframes pulse-highlight-${colorKey} {
+                0% { background-color: ${originalColor}; }
+                50% { background-color: ${pulseColor}; }
+                100% { background-color: ${originalColor}; }
             }
         `;
         document.head.appendChild(style);

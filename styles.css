@@ -1,8 +1,71 @@
+/* Base styles for all highlights */
 .highlighter-mark {
-    background-color: yellow !important;
     cursor: pointer;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.2s ease;
 }
 
-.highlighter-mark:hover {
+/* Default yellow highlight */
+.highlighter-mark:not([data-color]) {
+    background-color: #ffff00 !important;
+}
+
+.highlighter-mark:not([data-color]):hover {
     background-color: #ffeb3b !important;
+}
+
+/* Yellow highlight */
+.highlighter-mark[data-color="yellow"] {
+    background-color: #ffff00 !important;
+}
+
+.highlighter-mark[data-color="yellow"]:hover {
+    background-color: #ffeb3b !important;
+}
+
+/* Green highlight */
+.highlighter-mark[data-color="green"] {
+    background-color: #c2f0c2 !important;
+}
+
+.highlighter-mark[data-color="green"]:hover {
+    background-color: #a8e6a8 !important;
+}
+
+/* Blue highlight */
+.highlighter-mark[data-color="blue"] {
+    background-color: #cce5ff !important;
+}
+
+.highlighter-mark[data-color="blue"]:hover {
+    background-color: #b3d7ff !important;
+}
+
+/* Pink highlight */
+.highlighter-mark[data-color="pink"] {
+    background-color: #ffcccc !important;
+}
+
+.highlighter-mark[data-color="pink"]:hover {
+    background-color: #ffb3b3 !important;
+}
+
+/* Purple highlight */
+.highlighter-mark[data-color="purple"] {
+    background-color: #e6ccff !important;
+}
+
+.highlighter-mark[data-color="purple"]:hover {
+    background-color: #d9b3ff !important;
+}
+
+/* Special styles for temporary highlights */
+.highlighter-mark.temp-highlight {
+    animation: pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    100% { opacity: 1; }
 }
