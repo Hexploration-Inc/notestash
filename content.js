@@ -151,7 +151,35 @@ function applyHighlight(colorKey, colorValue) {
       }
 
       // Apply the highlight
-      range.surroundContents(span);
+      try {
+        // Try the simple method first (works for single node highlights)
+        range.surroundContents(span);
+      } catch (multiNodeError) {
+        // If the simple method fails, we're likely dealing with a multi-node selection
+        console.log(
+          "Multi-node selection detected, applying complex highlighting"
+        );
+
+        // Create a document fragment to hold our highlighted content
+        const fragment = document.createDocumentFragment();
+
+        // Create the highlight spans for all contents in the range
+        const contents = range.extractContents();
+
+        // Create a wrapper span with the same properties
+        const wrapper = document.createElement("span");
+        wrapper.className = "highlighter-mark";
+        wrapper.style.backgroundColor = colorValue;
+        wrapper.dataset.color = colorKey;
+        wrapper.dataset.highlightId = highlightId;
+
+        // Add the extracted contents to our wrapper
+        wrapper.appendChild(contents);
+        fragment.appendChild(wrapper);
+
+        // Insert the fragment at the start of the range
+        range.insertNode(fragment);
+      }
 
       // Save the highlight to storage
       const highlight = {
@@ -180,7 +208,18 @@ function applyHighlight(colorKey, colorValue) {
         const highlightId = `highlight-${Date.now()}`;
         span.dataset.highlightId = highlightId;
 
-        range.surroundContents(span);
+        try {
+          // Try the simple surroundContents first
+          range.surroundContents(span);
+        } catch (multiNodeError) {
+          // If it fails, it's probably a multi-node selection
+          console.log("Using alternative multi-node highlighting in fallback");
+
+          // Extract the contents and wrap them
+          const contents = range.extractContents();
+          span.appendChild(contents);
+          range.insertNode(span);
+        }
 
         // Save a simpler highlight version
         saveHighlight({
@@ -542,7 +581,19 @@ function applyHighlightFast(highlight, nodePathLookup) {
       }
       span.style.backgroundColor = highlight.colorValue || "#ffff00";
 
-      range.surroundContents(span);
+      try {
+        // Try simple method first
+        range.surroundContents(span);
+      } catch (multiNodeError) {
+        // Handle multi-node selections
+        console.log(
+          "Multi-node selection detected during fast highlight, using alternative approach"
+        );
+        const contents = range.extractContents();
+        span.appendChild(contents);
+        range.insertNode(span);
+      }
+
       return true;
     } catch (e) {
       console.log(
