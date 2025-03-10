@@ -1,2 +1,6 @@
 .DS_STORE
+.DS_Store
 icons/.DS_STORE
+*.bak
+node_modules/
+*.zip
