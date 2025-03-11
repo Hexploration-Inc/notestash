@@ -42,6 +42,13 @@
     transition: background-color 0.2s ease;
 }
 
+/* Handle text color for highlights in dark mode */
+@media (prefers-color-scheme: dark) {
+    .highlighter-mark {
+        color: black !important;
+    }
+}
+
 /* Default yellow highlight */
 .highlighter-mark:not([data-color]) {
     background-color: #ffff00 !important;
